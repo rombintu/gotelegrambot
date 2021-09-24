@@ -1,14 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	"math/rand"
-	"os"
-	"strconv"
-	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/rombintu/gotelegrambot/tools"
 )
 
 const (
@@ -21,37 +17,33 @@ const (
 
 var botKeyboard = tgbotapi.NewReplyKeyboard(
 	tgbotapi.NewKeyboardButtonRow(
-		tgbotapi.NewKeyboardButton("hi"),
-		tgbotapi.NewKeyboardButton("by"),
+		tgbotapi.NewKeyboardButton("button1"),
+		tgbotapi.NewKeyboardButton("button2"),
 	),
 )
 
 func main() {
-	var VALUE int
-
-	valInit := func() {
-		nanoHelper := rand.NewSource(time.Now().UnixNano())
-		VALUE = rand.New(nanoHelper).Intn(100)
+	conf, err := tools.ParseConfigToml("config.toml")
+	if err != nil {
+		log.Fatalf("%v", err)
 	}
 
-	bot, err := tgbotapi.NewBotAPI(os.Getenv("BOTOKEN"))
+	bot, err := tgbotapi.NewBotAPI(conf.Default.Token)
 	if err != nil {
 		log.Fatalf("TOKEN ERROR: %v", err)
 	}
 
-	bot.Debug = true
+	bot.Debug = conf.Default.Debug
 
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
 	u := tgbotapi.NewUpdate(0)
-	u.Timeout = 60
+	u.Timeout = conf.Default.TimeoutUpdate
 
 	updates, err := bot.GetUpdatesChan(u)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
-
-	valInit()
 
 	for u := range updates {
 
@@ -81,28 +73,13 @@ func main() {
 
 		switch userText {
 		case "/start":
-			returnKeyboard("Отгадай загаданное число (от 1 до 100)")
-			// printBot(fmt.Sprint(VALUE))
-			continue
-		case fmt.Sprint(VALUE):
-			printBot("Победа. Меняю число")
-			valInit()
-			continue
+			returnKeyboard("hello!")
+		case "button1":
+			printBot("button1")
+		case "button2":
+			printBot("button2")
+		default:
+			printBot("Неизвестная команда")
 		}
-		// default:
-		// 	returnKeyboard("Неизвестная команда")
-		// }
-
-		userVal, err := strconv.ParseInt(userText, 10, 64)
-		if err == nil {
-			if int64(VALUE) > userVal {
-				printBot("Бери больше")
-			} else if int64(VALUE) < userVal {
-				printBot("Бери меньше")
-			}
-		} else {
-			printBot("Ожидается число")
-		}
-
 	}
 }
